@@ -18,7 +18,7 @@ source /files/00-config
 ########################################
 
 #REPO="https://github.com/Arksine/moonraker.git"
-REPO="https://github.com/er-vaisnavi/my-moonraker-538.git"
+REPO="https://github.com/my-dudhwala/my-moonraker"
 DEPS="git"
 
 ########################################
