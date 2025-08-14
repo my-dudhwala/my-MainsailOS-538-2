@@ -1,5 +1,5 @@
 #!/bin/bash
 cd /home/pi
-git clone https://your-repo/KlipperScreen.git
+git clone https://github.com/my-dudhwala/my-KlipperScreen
 chmod +x KlipperScreen/scripts/KlipperScreen-install.sh
 BACKEND="X" NETWORK="Y" ./KlipperScreen/scripts/KlipperScreen-install.sh
