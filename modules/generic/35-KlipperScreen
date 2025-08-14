@@ -1,9 +1,16 @@
 #!/bin/bash
+set -e  # exit immediately if a command fails
 
 cd /home/pi
 
 apt-get update
 apt-get install -y git
+
+# Clone into /home/pi/my-KlipperScreen
 git clone https://github.com/my-dudhwala/my-KlipperScreen
-chmod +x my-KlipperScreen/scripts/KlipperScreen-install.sh
-BACKEND="X" NETWORK="Y" ./KlipperScreen/scripts/KlipperScreen-install.sh
+
+# Make the installer executable
+chmod +x /home/pi/my-KlipperScreen/scripts/KlipperScreen-install.sh
+
+# Run installer with environment variables
+BACKEND="X" NETWORK="Y" /home/pi/my-KlipperScreen/scripts/KlipperScreen-install.sh
