@@ -17,7 +17,7 @@ source /files/00-config
 # Configuration                        #
 ########################################
 
-DOWNLOAD_URL="https://github.com/my-dudhwala/my-mainsail/releases/latest/download/mainsail.zip"
+DOWNLOAD_URL="https://github.com/my-dudhwala/my-mainsail/archive/refs/tags/v1.0.0.zip"
 CONFIG_REPO="https://github.com/mainsail-crew/mainsail-config.git"
 DEPS=(git nginx unzip)
 
