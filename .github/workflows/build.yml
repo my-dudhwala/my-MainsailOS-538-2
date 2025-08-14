@@ -143,14 +143,14 @@ jobs:
           config: "${{ github.workspace }}/config.local"
           environment: '{ "RELEASE_TAG": "${{ env.RELEASE_TAG }}"}'
 
-      - name: "📺 Install KlipperScreen"
-        run: |
-          sudo chroot ./build/stage2/rootfs /bin/bash -c "
-            cd /home/pi && \
-            git clone https://your-repo/KlipperScreen.git && \
-            chmod +x KlipperScreen/scripts/KlipperScreen-install.sh && \
-            BACKEND='X' NETWORK='Y' ./KlipperScreen/scripts/KlipperScreen-install.sh
-          "
+#      - name: "📺 Install KlipperScreen"
+#        run: |
+#          sudo chroot ./build/stage2/rootfs /bin/bash -c "
+#            cd /home/pi && \
+#            git clone https://your-repo/KlipperScreen.git && \
+#            chmod +x KlipperScreen/scripts/KlipperScreen-install.sh && \
+#            BACKEND='X' NETWORK='Y' ./KlipperScreen/scripts/KlipperScreen-install.sh
+#          "
 
       - name: "✏ Rename image"
         working-directory: ./build
