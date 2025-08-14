@@ -5,5 +5,5 @@ cd /home/pi
 apt-get update
 apt-get install -y git
 git clone https://github.com/my-dudhwala/my-KlipperScreen
-chmod +x KlipperScreen/scripts/KlipperScreen-install.sh
+chmod +x my-KlipperScreen/scripts/KlipperScreen-install.sh
 BACKEND="X" NETWORK="Y" ./KlipperScreen/scripts/KlipperScreen-install.sh
