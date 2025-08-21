@@ -1,15 +1,21 @@
 #!/bin/bash
 set -e
 
-cd /home/pi
-
+# Make sure display deps + PyQt5 are installed
 apt-get update
-apt-get install -y git
+apt-get install -y \
+    git python3-pip python3-pyqt5 python3-pyqt5.qtsvg \
+    python3-pyqt5.qtquick python3-pyqt5.qtmultimedia \
+    python3-pyqt5.qtwebengine libxcb-xinerama0 xinput \
+    xserver-xorg x11-xserver-utils xinit
 
+# Clone fork into /home/pi (or default user, settable later)
+cd /home/pi
 git clone https://github.com/my-dudhwala/my-KlipperScreen
-
-# Ensure pi owns the directory
 chown -R pi:pi my-KlipperScreen
 
-# Run install script as pi user
+# Run official install script (sets up venv, service, etc.)
 sudo -u pi BACKEND="X" NETWORK="Y" bash my-KlipperScreen/scripts/KlipperScreen-install.sh
+
+# Ensure the systemd service is enabled
+systemctl enable KlipperScreen.service
