@@ -26,7 +26,7 @@ git clone https://github.com/my-dudhwala/my-KlipperScreen
 chown -R $DEFAULT_USER:$DEFAULT_USER my-KlipperScreen
 
 # Run official install script as detected user
-sudo -u $DEFAULT_USER BACKEND="X" NETWORK="Y" bash my-KlipperScreen/scripts/KlipperScreen-install.sh
+sudo -u $DEFAULT_USER BACKEND="X" NETWORK="Y" bash my-KlipperScreen/scripts/KlipperScreen-install.sh <<< "y"
 
 # Enable the service
 systemctl enable KlipperScreen.service
