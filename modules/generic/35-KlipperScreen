@@ -21,7 +21,7 @@ apt-get install -y \
 
 # Clone KlipperScreen repo if not already there
 if [ ! -d "${USER_HOME}/KlipperScreen" ]; then
-    sudo -u ${USERNAME} git clone https://github.com/KlipperScreen/KlipperScreen.git ${USER_HOME}/KlipperScreen
+    sudo -u ${USERNAME} git clone https://github.com/my-dudhwala/my-KlipperScreen.git ${USER_HOME}/KlipperScreen
 fi
 
 # Install requirements
