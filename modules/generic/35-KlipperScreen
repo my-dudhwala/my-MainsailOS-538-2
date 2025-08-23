@@ -1,32 +1,51 @@
 #!/bin/bash
+
 set -e
 
-# Detect default non-root user (UID >= 1000)
-DEFAULT_USER=$(awk -F: '$3 >= 1000 && $1 != "nobody" {print $1; exit}' /etc/passwd)
+# Load environment (USERNAME, etc.)
+source /boot/config.txt || true
 
-# Sanity check
-if [ -z "$DEFAULT_USER" ]; then
-    echo "❌ Could not detect default user. Falling back to 'pi'."
-    DEFAULT_USER="pi"
-fi
+USERNAME=${USERNAME:-pi}
+USER_HOME="/home/${USERNAME}"
 
-echo "✅ Detected default user: $DEFAULT_USER"
+echo "[install] Installing KlipperScreen..."
 
-# Install dependencies
+# Dependencies
 apt-get update
 apt-get install -y \
-    git python3-pip python3-pyqt5 python3-pyqt5.qtsvg \
-    python3-pyqt5.qtquick python3-pyqt5.qtmultimedia \
-    python3-pyqt5.qtwebengine libxcb-xinerama0 xinput \
-    xserver-xorg x11-xserver-utils xinit
+    python3-pip python3-dev python3-gi \
+    python3-kivy libmtdev-dev \
+    libgl1-mesa-dev xinput x11-xserver-utils \
+    libffi-dev libssl-dev \
+    libjpeg-dev zlib1g-dev
 
-# Clone your fork into the user's home dir
-cd /home/$DEFAULT_USER
-git clone https://github.com/my-dudhwala/my-KlipperScreen
-chown -R $DEFAULT_USER:$DEFAULT_USER my-KlipperScreen
+# Clone KlipperScreen repo if not already there
+if [ ! -d "${USER_HOME}/KlipperScreen" ]; then
+    sudo -u ${USERNAME} git clone https://github.com/KlipperScreen/KlipperScreen.git ${USER_HOME}/KlipperScreen
+fi
 
-# Run official install script as detected user
-sudo -u $DEFAULT_USER BACKEND="X" NETWORK="Y" bash my-KlipperScreen/scripts/KlipperScreen-install.sh <<< "y"
+# Install requirements
+cd ${USER_HOME}/KlipperScreen
+sudo -u ${USERNAME} pip3 install -r requirements.txt
 
-# Enable the service
-systemctl enable KlipperScreen.service
+# Create systemd service
+cat <<EOF >/etc/systemd/system/klipperscreen.service
+[Unit]
+Description=KlipperScreen
+After=systemd-user-sessions.service display-manager.service
+
+[Service]
+User=${USERNAME}
+WorkingDirectory=${USER_HOME}/KlipperScreen
+ExecStart=${USER_HOME}/KlipperScreen/screen.py
+Restart=always
+Environment=XDG_RUNTIME_DIR=/run/user/%U
+
+[Install]
+WantedBy=graphical.target
+EOF
+
+# Enable service
+systemctl enable klipperscreen.service
+
+echo "[install] KlipperScreen installed and enabled."
