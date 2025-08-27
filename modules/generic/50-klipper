@@ -16,7 +16,7 @@ source /files/00-config
 ########################################
 
 SRC_DIR="/home/${BASE_USER}/KlipperScreen"
-REPO="https://github.com/KlipperScreen/KlipperScreen.git"
+REPO="https://github.com/my-dudhwala/my-klipper"
 
 DEPS=(git \
       python3 python3-pip python3-dev \
