@@ -42,7 +42,8 @@ sudo -u "${BASE_USER}" git clone ${REPO} KlipperScreen
 ########################################
 
 echo "Installing Python dependencies..."
-sudo -u "${BASE_USER}" pip3 install -r "${SRC_DIR}/scripts/KlipperScreen-requirements.txt"
+#sudo -u "${BASE_USER}" pip3 install -r "${SRC_DIR}/scripts/KlipperScreen-requirements.txt"
+sudo -u pi pip3 install --break-system-packages -r /home/pi/KlipperScreen/scripts/KlipperScreen-requirements.txt
 
 ########################################
 # Setup Systemd Service                #
