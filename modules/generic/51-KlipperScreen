@@ -2,64 +2,92 @@
 set -xe
 export LC_ALL=C
 
-# Load shared functions/configs
+########################################
+# Functions and Basic Configuration    #
+########################################
+
 source /common.sh
 install_cleanup_trap
 source /files/00-config
 
-echo "=== Setting up KlipperScreen ==="
+########################################
+# System Packages                      #
+########################################
 
-# Ensure pi user exists
-id pi || useradd -m -s /bin/bash pi
+echo "Updating system packages..."
+sudo apt-get update
+sudo apt-get upgrade -y
 
-# Create bin folder
-sudo -u pi mkdir -p /home/pi/.local/bin
+# Install dependencies for KlipperScreen
+echo "Installing required packages..."
+sudo apt-get install -y \
+    python3-venv python3-dev python3-pip \
+    libopenjp2-7 libtiff5 \
+    libatlas-base-dev libgfortran5 \
+    xserver-xorg x11-xserver-utils xinit \
+    matchbox-window-manager \
+    git
 
-# Create Python venv for KlipperScreen
-sudo -u pi python3 -m venv /home/pi/.klipperscreen-venv
-sudo -u pi /home/pi/.klipperscreen-venv/bin/pip install --upgrade pip wheel setuptools
+########################################
+# Create user env + Python venv        #
+########################################
 
-# Clone KlipperScreen repo
+echo "Setting up Python virtual environment for KlipperScreen..."
+sudo -u pi python3 -m venv /home/pi/klipperscreen-env
+sudo -u pi /home/pi/klipperscreen-env/bin/pip install --upgrade pip wheel setuptools
+
+########################################
+# Clone and install KlipperScreen      #
+########################################
+
 if [ ! -d /home/pi/KlipperScreen ]; then
-    sudo -u pi git clone https://github.com/KlipperScreen/KlipperScreen.git /home/pi/KlipperScreen
-else
-    sudo -u pi git -C /home/pi/KlipperScreen pull --ff-only || true
+    sudo -u pi git clone https://github.com/jordanruthe/KlipperScreen.git /home/pi/KlipperScreen
 fi
 
-# Install dependencies into venv
-REQ_FILE="/home/pi/KlipperScreen/scripts/KlipperScreen-requirements.txt"
-if [ -f "$REQ_FILE" ]; then
-    sudo -u pi /home/pi/.klipperscreen-venv/bin/pip install -r "$REQ_FILE"
-fi
+sudo -u pi /home/pi/klipperscreen-env/bin/pip install -r /home/pi/KlipperScreen/scripts/ks_includes/requirements.txt
 
-# Create wrapper script
+########################################
+# X11 Autostart for pi user            #
+########################################
 
-cat >/home/pi/.local/bin/KlipperScreen-start.sh <<'EOF'
+echo "Configuring X11 autostart with KlipperScreen..."
+
+mkdir -p /home/pi/.xsession.d
+cat >/home/pi/.xsession <<'EOF'
 #!/bin/bash
-source /home/pi/.klipperscreen-venv/bin/activate
-exec python /home/pi/KlipperScreen/screen.py
+# Start matchbox WM and KlipperScreen
+matchbox-window-manager -use_titlebar no -use_cursor no &
+/home/pi/klipperscreen-env/bin/python3 /home/pi/KlipperScreen/screen.py
 EOF
-chmod +x /home/pi/.local/bin/KlipperScreen-start.sh
-chown pi:pi /home/pi/.local/bin/KlipperScreen-start.sh
+chmod +x /home/pi/.xsession
+chown pi:pi /home/pi/.xsession
 
-# Install systemd service
-cat >/etc/systemd/system/KlipperScreen.service <<'EOF'
+########################################
+# Systemd Service                      #
+########################################
+
+echo "Installing systemd service for graphical KlipperScreen..."
+
+cat >/etc/systemd/system/klipperscreen.service <<'EOF'
 [Unit]
-Description=KlipperScreen
-After=systemd-user-sessions.service plymouth-quit-wait.service
+Description=Start X11 with KlipperScreen
+After=systemd-user-sessions.service
 
 [Service]
 User=pi
-WorkingDirectory=/home/pi
-ExecStart=/home/pi/.local/bin/KlipperScreen-start.sh
+Environment=DISPLAY=:0
+ExecStart=/usr/bin/startx /home/pi/.xsession --
 Restart=always
-RestartSec=3
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=graphical.target
 EOF
 
-# Enable the service
-systemctl enable KlipperScreen.service
+sudo systemctl enable klipperscreen.service
 
-echo "=== KlipperScreen setup complete, will auto-start after reboot ==="
+########################################
+# Finish                               #
+########################################
+
+echo "KlipperScreen setup complete. Rebooting..."
+sudo reboot
