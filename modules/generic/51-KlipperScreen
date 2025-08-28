@@ -27,15 +27,28 @@ DEPS=(git python3 python3-pip python3-dev python3-gi \
 ########################################
 
 echo "Installing dependencies for KlipperScreen..."
+apt-get update
 apt-get install --yes "${DEPS[@]}"
+
+# Install Python dependencies
+pip3 install --upgrade pip wheel setuptools
+pip3 install -r requirements.txt
 
 ########################################
 # Clone repository                     #
 ########################################
 
-echo "Cloning KlipperScreen repo ..."
-pushd /home/"${BASE_USER}" &> /dev/null || exit 1
-sudo -u "${BASE_USER}" git clone ${REPO} KlipperScreen
+#echo "Cloning KlipperScreen repo ..."
+#pushd /home/"${BASE_USER}" &> /dev/null || exit 1
+#sudo -u "${BASE_USER}" git clone ${REPO} KlipperScreen
+
+if [ ! -d "$SRC_DIR" ]; then
+    git clone "$REPO" "$SRC_DIR"
+else
+    cd "$SRC_DIR" && git pull
+fi
+
+cd "$SRC_DIR"
 
 ########################################
 # Install Python dependencies          #
@@ -59,6 +72,32 @@ chown -R "${BASE_USER}":"${BASE_USER}" /home/"${BASE_USER}"/KlipperScreen
 
 # Enable service
 systemctl_if_exists enable KlipperScreen.service
+
+########################################
+# Setup systemd service                #
+########################################
+
+cat >/etc/systemd/system/KlipperScreen.service <<EOF
+[Unit]
+Description=KlipperScreen
+After=systemd-user-sessions.service plymouth-quit-wait.service
+
+[Service]
+User=${BASE_USER}
+WorkingDirectory=${SRC_DIR}
+ExecStart=/usr/bin/python3 ${SRC_DIR}/screen.py
+Restart=always
+Environment=DISPLAY=:0
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Place service in systemd directory
+install -m 644 51-klipperscreen.service /etc/systemd/system/KlipperScreen.service
+
+# Enable service (without systemctl)
+ln -sf /etc/systemd/system/KlipperScreen.service /etc/systemd/system/multi-user.target.wants/KlipperScreen.service
 
 ########################################
 # Return to saved directory            #
