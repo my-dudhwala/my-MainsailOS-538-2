@@ -19,14 +19,25 @@ sudo -u pi mkdir -p /home/pi/.local/bin
 sudo -u pi python3 -m venv /home/pi/.klipperscreen-venv
 sudo -u pi /home/pi/.klipperscreen-venv/bin/pip install --upgrade pip wheel setuptools
 
-# Install KlipperScreen inside venv
-sudo -u pi /home/pi/.klipperscreen-venv/bin/pip install git+https://github.com/KlipperScreen/KlipperScreen.git
+# Clone KlipperScreen repo
+if [ ! -d /home/pi/KlipperScreen ]; then
+    sudo -u pi git clone https://github.com/KlipperScreen/KlipperScreen.git /home/pi/KlipperScreen
+else
+    sudo -u pi git -C /home/pi/KlipperScreen pull --ff-only || true
+fi
+
+# Install dependencies into venv
+REQ_FILE="/home/pi/KlipperScreen/scripts/KlipperScreen-requirements.txt"
+if [ -f "$REQ_FILE" ]; then
+    sudo -u pi /home/pi/.klipperscreen-venv/bin/pip install -r "$REQ_FILE"
+fi
 
 # Create wrapper script
+
 cat >/home/pi/.local/bin/KlipperScreen-start.sh <<'EOF'
 #!/bin/bash
 source /home/pi/.klipperscreen-venv/bin/activate
-exec python -m KlipperScreen
+exec python /home/pi/KlipperScreen/screen.py
 EOF
 chmod +x /home/pi/.local/bin/KlipperScreen-start.sh
 chown pi:pi /home/pi/.local/bin/KlipperScreen-start.sh
