@@ -44,7 +44,7 @@ if [ ! -d /home/pi/KlipperScreen ]; then
     sudo -u pi git clone https://github.com/jordanruthe/KlipperScreen.git /home/pi/KlipperScreen
 fi
 
-sudo -u pi /home/pi/klipperscreen-env/bin/pip install -r /home/pi/KlipperScreen/scripts/ks_includes/requirements.txt
+sudo -u pi /home/pi/klipperscreen-env/bin/pip install -r /home/pi/KlipperScreen/scripts/KlipperScreen-requirements.txt
 
 ########################################
 # X11 Autostart for pi user            #
