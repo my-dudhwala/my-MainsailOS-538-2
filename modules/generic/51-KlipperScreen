@@ -20,9 +20,10 @@ fi
 
 SRC_DIR="/home/${BASE_USER}/KlipperScreen"
 REPO="https://github.com/my-dudhwala/my-KlipperScreen"
+VENV_DIR="${SRC_DIR}/venv"
 
-# Packages: Xorg, minimal WM, python, build tools if needed
-DEPS=(git python3 python3-pip python3-dev python3-gi \
+# Packages: Xorg, minimal WM, python, build tools if needed. NOTE: python3-venv required.
+DEPS=(git python3 python3-venv python3-dev python3-gi \
       python3-gi-cairo gir1.2-gtk-3.0 libgtk-3-0 \
       xserver-xorg xinit x11-xserver-utils matchbox-window-manager \
       fonts-dejavu fonts-freefont-ttf \
@@ -37,13 +38,6 @@ apt-get install --yes "${DEPS[@]}"
 apt-get clean
 rm -rf /var/lib/apt/lists/*
 
-# Ensure user's local bin exists
-sudo -u "${BASE_USER}" mkdir -p /home/"${BASE_USER}"/.local/bin
-
-# Upgrade pip & tools for the user (in user site)
-echo "Upgrading pip tools for ${BASE_USER} (user install)..."
-sudo -u "${BASE_USER}" /usr/bin/python3 -m pip install --user --upgrade pip wheel setuptools
-
 # Clone or update repo
 if [ ! -d "${SRC_DIR}" ]; then
     echo "Cloning KlipperScreen repo into ${SRC_DIR}..."
@@ -55,43 +49,48 @@ else
     popd
 fi
 
-# Install Python requirements into user's local site (avoids breaking system packages)
+# Create Python virtual environment (owned by BASE_USER)
+if [ ! -d "${VENV_DIR}" ]; then
+    echo "Creating virtualenv at ${VENV_DIR} ..."
+    sudo -u "${BASE_USER}" /usr/bin/python3 -m venv "${VENV_DIR}"
+else
+    echo "Virtualenv already exists at ${VENV_DIR}"
+fi
+
+# Upgrade pip/setuptools/wheel inside venv
+echo "Upgrading pip/setuptools/wheel inside venv..."
+sudo -u "${BASE_USER}" "${VENV_DIR}/bin/pip" install --upgrade pip setuptools wheel
+
+# Install Python requirements into venv (if file present)
 REQ_FILE="${SRC_DIR}/scripts/KlipperScreen-requirements.txt"
 if [ -f "${REQ_FILE}" ]; then
-    echo "Installing Python requirements into ${BASE_USER}'s user site..."
-    sudo -u "${BASE_USER}" /usr/bin/python3 -m pip install --user -r "${REQ_FILE}"
+    echo "Installing Python requirements into venv..."
+    sudo -u "${BASE_USER}" "${VENV_DIR}/bin/pip" install -r "${REQ_FILE}"
 else
     echo "Warning: requirements file not found at ${REQ_FILE}. Skipping pip install."
 fi
 
 ########################################################################
-# Create start wrapper and service files
+# Create start wrapper and service files (use venv python)
 ########################################################################
 
 START_WRAPPER="${SRC_DIR}/start-klipperscreen.sh"
-cat > "${START_WRAPPER}" <<'EOF'
+cat > "${START_WRAPPER}" <<EOF
 #!/bin/bash
 # wrapper to start minimal WM and KlipperScreen in an X session
-# run as the target user (expects a login shell environment)
 export XDG_RUNTIME_DIR="/run/user/$(id -u)"
 export DISPLAY=":0"
 
-# Start matchbox-window-manager in background
-# If matchbox is not present the script will still try to run screen.py
+# Start matchbox-window-manager in background if available
 if command -v matchbox-window-manager >/dev/null 2>&1; then
     matchbox-window-manager &
-    # small delay so window manager comes up
     sleep 0.6
 fi
 
-# Make sure .local/bin is in PATH (pip --user installs here)
-export PATH="$HOME/.local/bin:$PATH"
-
-# Start KlipperScreen
-exec /usr/bin/python3 "${SRC_DIR}/screen.py"
+# Run KlipperScreen using the virtualenv python
+exec "${VENV_DIR}/bin/python" "${SRC_DIR}/screen.py"
 EOF
 
-# Replace placeholder ${SRC_DIR} with actual path in the wrapper (we used heredoc single-quote to avoid expansion)
 # Set ownership and permissions
 chown "${BASE_USER}:${BASE_USER}" "${START_WRAPPER}"
 chmod +x "${START_WRAPPER}"
@@ -105,13 +104,10 @@ After=systemd-user-sessions.service network.target
 Wants=network.target
 
 [Service]
-# Run the xinit as the target user so that home/.local is used.
 Type=simple
-# Use a login shell so user environment (~/.profile) is loaded
 ExecStart=/bin/bash -lc 'exec su - ${BASE_USER} -c "/usr/bin/xinit ${SRC_DIR}/start-klipperscreen.sh -- :0 vt7 -nolisten tcp 2>>/tmp/klipperscreen-x.log"'
 Restart=on-failure
 RestartSec=2
-# Allow access to the TTYs for Xorg
 TTYPath=/dev/tty7
 
 [Install]
@@ -122,8 +118,7 @@ EOF
 ln -sf "${X_SERVICE}" /etc/systemd/system/graphical.target.wants/klipperscreen-x.service
 
 ########################################################################
-# Optional: create a helper small 'watchdog' service for klipperscreen-only
-#   (not strictly necessary because start wrapper exec's screen.py)
+# Optional fallback service (uses venv python directly)
 ########################################################################
 
 KS_SERVICE="/etc/systemd/system/KlipperScreen.service"
@@ -135,15 +130,14 @@ After=klipperscreen-x.service
 [Service]
 User=${BASE_USER}
 WorkingDirectory=${SRC_DIR}
-ExecStart=/bin/bash -lc 'export PATH=\$HOME/.local/bin:\$PATH; export DISPLAY=:0; exec /usr/bin/python3 ${SRC_DIR}/screen.py'
+ExecStart=${VENV_DIR}/bin/python ${SRC_DIR}/screen.py
 Restart=always
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
-# Note: we will not enable this fallback service into default wants by default, but keep file for debugging.
-# If you prefer to enable it as a fallback, uncomment the ln line below:
+# Do not auto-enable fallback by default (commented earlier). If you want it enabled, add a symlink:
 # ln -sf "${KS_SERVICE}" /etc/systemd/system/multi-user.target.wants/KlipperScreen.service
 
 ########################################################################
@@ -158,6 +152,6 @@ echo " - klipperscreen-x.service (enabled -> graphical.target)"
 echo " - KlipperScreen.service (file created as fallback, not enabled by default)"
 
 echo
-echo "IMPORTANT:"
-echo "  After first boot the system should start an X session (on :0) and run KlipperScreen automatically."
-echo "  If KlipperScreen does not appear, inspect /tmp/klipperscreen-x.log and journalctl -u klipperscreen-x.service for errors."
+echo "TIP: If KlipperScreen does not appear after first boot, check:"
+echo "  sudo journalctl -u klipperscreen-x.service -b"
+echo "  sudo cat /tmp/klipperscreen-x.log"
