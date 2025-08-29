@@ -1,7 +1,12 @@
 #!/bin/bash -e
 
-# Clone KlipperScreen
-git clone https://github.com/KlipperScreen/KlipperScreen.git /home/pi/KlipperScreen
+# Ensure pi user exists (pi-gen normally creates it)
+id -u pi &>/dev/null || useradd -m -s /bin/bash pi
 
-# Install KlipperScreen
-bash /home/pi/KlipperScreen/scripts/KlipperScreen-install.sh
+# Clone KlipperScreen as pi
+if [ ! -d /home/pi/KlipperScreen ]; then
+  su - pi -c "git clone https://github.com/KlipperScreen/KlipperScreen.git /home/pi/KlipperScreen"
+fi
+
+# Run installer as pi, non-interactively
+su - pi -c "yes | bash /home/pi/KlipperScreen/scripts/KlipperScreen-install.sh"
