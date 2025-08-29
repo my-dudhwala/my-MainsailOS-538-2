@@ -1,1 +1,7 @@
+#!/bin/bash -e
 
+# Clone KlipperScreen
+git clone https://github.com/KlipperScreen/KlipperScreen.git /home/pi/KlipperScreen
+
+# Install KlipperScreen
+bash /home/pi/KlipperScreen/scripts/KlipperScreen-install.sh
