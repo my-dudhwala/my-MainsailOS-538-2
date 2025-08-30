@@ -22,14 +22,18 @@ apt-get install -y \
   python3-pip \
   python3-numpy
 
-# Install python requirements
+# Install python requirements for KlipperScreen
 su - pi -c "pip3 install --user -r /home/pi/KlipperScreen/scripts/requirements.txt"
 
 # Copy systemd service for KlipperScreen
 cp /home/pi/KlipperScreen/scripts/KlipperScreen.service /etc/systemd/system/
-
-# Enable the service (don’t start it here, systemd will start on boot)
 systemctl enable KlipperScreen
 
-# Make sure ownership is correct
+# --- safeguard: ensure mainsail web files still exist ---
+if [ -d /home/pi/mainsail ]; then
+  chown -R www-data:www-data /home/pi/mainsail
+  chmod -R 755 /home/pi/mainsail
+fi
+
+# Fix ownership of KlipperScreen
 chown -R pi:pi /home/pi/KlipperScreen
