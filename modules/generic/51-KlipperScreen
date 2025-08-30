@@ -10,4 +10,4 @@ if [ ! -d /home/pi/KlipperScreen ]; then
 fi
 
 # Run installer as pi, non-interactively
-su - pi -c "yes | bash /home/pi/KlipperScreen/scripts/KlipperScreen-install.sh"
+su - pi -c "yes | bash /home/pi/my-KlipperScreen/scripts/KlipperScreen-install.sh"
