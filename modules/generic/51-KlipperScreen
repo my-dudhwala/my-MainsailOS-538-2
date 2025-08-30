@@ -3,10 +3,33 @@
 # Ensure pi user exists (pi-gen normally creates it)
 id -u pi &>/dev/null || useradd -m -s /bin/bash pi
 
-# Clone KlipperScreen as pi
+# Clone KlipperScreen as pi (if not already present)
 if [ ! -d /home/pi/KlipperScreen ]; then
   su - pi -c "git clone https://github.com/KlipperScreen/KlipperScreen.git /home/pi/KlipperScreen"
 fi
 
-# Run installer as pi, non-interactively
-su - pi -c "yes | bash /home/pi/KlipperScreen/scripts/KlipperScreen-install.sh"
+# Install required dependencies for KlipperScreen
+apt-get update
+apt-get install -y \
+  python3-pyqt5 \
+  python3-pyqt5.qtserialport \
+  python3-libgpiod \
+  fonts-dejavu \
+  xserver-xorg \
+  xinit \
+  matchbox-window-manager \
+  git \
+  python3-pip \
+  python3-numpy
+
+# Install python requirements
+su - pi -c "pip3 install --user -r /home/pi/KlipperScreen/scripts/requirements.txt"
+
+# Copy systemd service for KlipperScreen
+cp /home/pi/KlipperScreen/scripts/KlipperScreen.service /etc/systemd/system/
+
+# Enable the service (don’t start it here, systemd will start on boot)
+systemctl enable KlipperScreen
+
+# Make sure ownership is correct
+chown -R pi:pi /home/pi/KlipperScreen
