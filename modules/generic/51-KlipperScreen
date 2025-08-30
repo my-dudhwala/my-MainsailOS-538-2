@@ -5,7 +5,8 @@ id -u pi &>/dev/null || useradd -m -s /bin/bash pi
 
 # Clone KlipperScreen as pi
 if [ ! -d /home/pi/KlipperScreen ]; then
-  su - pi -c "git clone https://github.com/KlipperScreen/KlipperScreen.git /home/pi/KlipperScreen"
+  #su - pi -c "git clone https://github.com/KlipperScreen/KlipperScreen.git /home/pi/KlipperScreen" #https://github.com/my-dudhwala/my-KlipperScreen
+  su - pi -c "git clone https://github.com/my-dudhwala/my-KlipperScreen.git /home/pi/my-KlipperScreen"
 fi
 
 # Run installer as pi, non-interactively
